@@ -1,0 +1,226 @@
+#! /usr/bin/env ruby
+# encoding: utf-8
+
+
+Main {
+  name <<-__
+
+    hrs
+
+  __
+
+  synopsis <<-__
+
+    hrs 2.5 @dojo4 doing something important
+
+  __
+
+  description <<-__
+
+    hrs is a svelt time tracker for ruby
+
+  __
+
+  examples <<-__
+
+    . hrs 4.5 dojo4 doing something important
+
+    . hrs list project -a 2008-05-01 -b 2008-05-07
+
+    . hrs total project -a 2008-05-01 -b 2008-05-07
+
+    . hrs 4.2 project -- adding --dash feature to project 
+
+  __
+
+  option('when', 'w'){
+    argument :required
+    desc 'iso8601 date work was performed'
+    cast{|value| Date.from(value)}
+    default Date.today
+  }
+
+  option('after', 'a'){
+    argument :required
+    desc 'limit data shown to entries *after* this iso8601 date'
+    default Time::Beginning.to_date
+    cast{|value| Date.from(value)}
+  }
+
+  option('before', 'b'){
+    argument :required
+    desc 'limit data shown to entries *before* this iso8601 date'
+    default Time::End.to_date
+    cast{|value| Date.from(value)}
+  }
+
+  option('noop', 'n'){
+    desc 'perform all operations on a tmp database'
+    cast{|value| $noop = value}
+  }
+
+  def run
+    mode = argv.shift if argv.first and respond_to?(argv.first)
+    if mode.nil?
+      if argv.empty?
+        mode = :list
+      else
+        mode = :hours
+      end
+    end
+    send(mode)
+  end
+
+  def hours options = {}
+    hours = argv.shift or abort("no hours")
+    project = argv.shift or abort("no project")
+    message = argv.join(' ')
+
+    hours = Float hours
+    project = String project
+    message = message.empty? ? edit_message! : message
+
+    abort('no message!') if message.empty?
+
+    record = new_record({
+      :when => params['when'].value,
+      :what => message,
+      :time => hours
+    })
+
+    db.transaction do
+      db[project] ||= []
+      db[project] << record
+    end
+
+    result = { project => record }
+
+    y result unless options[:display]==false
+    result
+  end
+
+  def edit_message!
+    require 'tmpdir'
+    require 'fileutils'
+    tmp = File.join(Dir.tmpdir, "hrs-#{ Process.ppid }-#{ Process.pid }.#{ rand }.txt")
+    at_exit{ FileUtils.rm_f(tmp) }
+    editor = ENV['EDITOR'] || 'vim'
+    system("touch #{ tmp.inspect } && #{ editor.inspect } #{ tmp.inspect }")
+    msg = IO.read(tmp).strip
+    abort('no msg!') if msg.empty?
+    msg
+  end
+
+  def list options = {}
+    project = argv.shift
+    total = 0 if options['total'] || options[:total]
+    after = param['after'].value
+    before = param['before'].value
+
+    result = Hash.new
+
+    db.transaction do
+      projects = project ? [project] : db.roots
+      projects.each do |project|
+        list = db[project]
+        next unless list
+        result[project] = []
+        list.each do |element|
+          record = new_record element
+          if record['when'] >= after and record['when'] < before
+            result[project] << record
+            total += Float(record['time']) if total
+          end
+        end
+      end
+      result['total'] = total if total
+    end
+
+    y result unless options[:display]==false
+    result
+  end
+
+  def total
+    list :total => true
+  end
+
+  def status
+    if params[:when].given? and !params[:after].given? and !params[:before].given?
+      params[:after].values.replace([params[:when].value - 1])
+      params[:before].values.replace([params[:when].value + 1])
+    elsif !params[:after].given?
+      params[:after].values.replace(Array(Date.from('last sunday')))
+    end
+
+    result = list(:display => false)
+
+    dates = Hash.new
+
+    result.each do |project, entries|
+      entries.each do |entry|
+        synopsis = <<-__
+            @#{ project } #{ entry['time'] }
+              #{ entry['what'] }
+        __
+        synopsis.gsub!(/^[\s]{10}/, '')
+        synopsis.gsub!(/[\s]$/, '')
+        dates[entry['when']] ||= [] 
+        dates[entry['when']].push(synopsis)
+      end
+    end
+
+    dates.each do |date, list|
+      puts date
+      list.each do |synopsis|
+        puts(synopsis)
+        puts
+      end
+    end
+  end
+
+  def db
+    @db ||= (
+      if $noop
+        require 'fileutils'
+        require 'tempfile'
+        tmp = Tempfile.new Process.pid.to_s
+        File.open(File.join(Hrs.home, '.hrs.yml')){|fd| tmp.write fd.read}
+        tmp.close
+        @db = YAML::Store.new(tmp.path)
+      else
+        @db = YAML::Store.new(File.join(Hrs.home, '.hrs.yml'))
+      end
+    )
+  end
+
+  def new_record *args
+    pairs = []
+    args.map do |arg|
+      case arg
+        when Hash, Array
+          arg.to_a
+        else
+          arg
+      end
+    end.flatten.each_slice(2) do |first, last|
+      pairs << first.to_s << last
+    end
+    Hash[ *pairs ]
+  end
+}
+
+
+BEGIN {
+  require 'pathname'
+  this = Pathname.new(__FILE__).realpath.to_s
+  bindir = File.dirname(this)
+  rootdir = File.dirname(bindir)
+  libdir = File.join(rootdir, 'lib')
+  hrs = File.join(libdir, 'hrs.rb')
+
+  require(hrs)
+
+  STDOUT.sync = true
+  STDERR.sync = true
+  STDIN.sync = true
+}
