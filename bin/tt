@@ -5,31 +5,31 @@
 Main {
   name <<-__
 
-    hrs
+    tt
 
   __
 
   synopsis <<-__
 
-    hrs 2.5 @dojo4 doing something important
+    tt 2.5 @dojo4 doing something important
 
   __
 
   description <<-__
 
-    hrs is a svelt time tracker for ruby
+    tt is a svelt time tracker for ruby
 
   __
 
   examples <<-__
 
-    . hrs 4.5 dojo4 doing something important
+    . tt 4.5 dojo4 doing something important
 
-    . hrs list project -a 2008-05-01 -b 2008-05-07
+    . tt list project -a 2008-05-01 -b 2008-05-07
 
-    . hrs total project -a 2008-05-01 -b 2008-05-07
+    . tt total project -a 2008-05-01 -b 2008-05-07
 
-    . hrs 4.2 project -- adding --dash feature to project 
+    . tt 4.2 project -- adding --dash feature to project 
 
   __
 
@@ -102,7 +102,7 @@ Main {
   def edit_message!
     require 'tmpdir'
     require 'fileutils'
-    tmp = File.join(Dir.tmpdir, "hrs-#{ Process.ppid }-#{ Process.pid }.#{ rand }.txt")
+    tmp = File.join(Dir.tmpdir, "tt-#{ Process.ppid }-#{ Process.pid }.#{ rand }.txt")
     at_exit{ FileUtils.rm_f(tmp) }
     editor = ENV['EDITOR'] || 'vim'
     system("touch #{ tmp.inspect } && #{ editor.inspect } #{ tmp.inspect }")
@@ -184,11 +184,11 @@ Main {
         require 'fileutils'
         require 'tempfile'
         tmp = Tempfile.new Process.pid.to_s
-        File.open(File.join(Hrs.home, '.hrs.yml')){|fd| tmp.write fd.read}
+        File.open(File.join(TT.home, '.tt.yml')){|fd| tmp.write fd.read}
         tmp.close
         @db = YAML::Store.new(tmp.path)
       else
-        @db = YAML::Store.new(File.join(Hrs.home, '.hrs.yml'))
+        @db = YAML::Store.new(File.join(TT.home, '.tt.yml'))
       end
     )
   end
@@ -216,9 +216,9 @@ BEGIN {
   bindir = File.dirname(this)
   rootdir = File.dirname(bindir)
   libdir = File.join(rootdir, 'lib')
-  hrs = File.join(libdir, 'hrs.rb')
+  tt = File.join(libdir, 'tt.rb')
 
-  require(hrs)
+  require(tt)
 
   STDOUT.sync = true
   STDERR.sync = true

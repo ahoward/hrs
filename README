@@ -1,33 +1,21 @@
-NAME
-  
-      hrs
+Treetop Parsing Expression Grammar (PEG) Comand Line Compiler
+Usage: tt [options] grammar_file[.treetop|.tt] ...
 
-SYNOPSIS
-  
-      hrs 2.5 @dojo4 doing something important
+Examples:
+  tt foo.tt               # 1 grammar -> 1 parser source
+  tt foo bar.treetop      # 2 grammars -> 2 separate parsers
+  tt -o alt_name.rb foo   # alternately named output file
 
-DESCRIPTION
-  
-      hrs is a svelt time tracker for ruby
 
-PARAMETERS
-  --when=when, -w (0 ~> when=2012-01-27) 
-      iso8601 date work was performed 
-  --after=after, -a (0 ~> after=1969-12-31) 
-      limit data shown to entries *after* this iso8601 date 
-  --before=before, -b (0 ~> before=2038-01-18) 
-      limit data shown to entries *before* this iso8601 date 
-  --noop, -n 
-      perform all operations on a tmp database 
-  --help, -h 
+NOTE: while treetop grammar files *must* have one of the following
+filename extensions, the extension name is not required when calling
+the compiler with grammar file names.
 
-EXAMPLES
-  
-      . hrs 4.5 dojo4 doing something important
-  
-      . hrs list project -a 2008-05-01 -b 2008-05-07
-  
-      . hrs total project -a 2008-05-01 -b 2008-05-07
-  
-      . hrs 4.2 project -- adding --dash feature to project 
+  Valid extensions: .treetop, .tt
 
+
+Options:
+    -o, --output FILENAME            Write parser source to FILENAME
+    -f, --force                      Overwrite existing output file(s)
+    -v, --version                    Show Treetop version
+    -h, --help                       Show this help message

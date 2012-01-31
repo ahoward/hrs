@@ -7,11 +7,11 @@ require 'tempfile'
 require 'fileutils'
 require 'enumerator'
 
-module Hrs
+module TT
   Version = '0.0.1' unless defined?(Version)
 
   def version
-    Hrs::Version
+    TT::Version
   end
 
   def dependencies
@@ -38,10 +38,10 @@ module Hrs
 
   def load(*libs)
     libs = libs.join(' ').scan(/[^\s+]+/)
-    Hrs.libdir{ libs.each{|lib| Kernel.load(lib) } }
+    TT.libdir{ libs.each{|lib| Kernel.load(lib) } }
   end
 
-  extend(Hrs)
+  extend(TT)
 end
 
 # gems
@@ -53,13 +53,13 @@ rescue LoadError
 end
 
 if defined?(gem)
-  Hrs.dependencies.each do |lib, dependency|
+  TT.dependencies.each do |lib, dependency|
     gem(*dependency)
     require(lib)
   end
 end
 
-def Hrs.home
+def TT.home
   home =
     catch :home do
       ["HOME", "USERPROFILE"].each do |key|
@@ -155,4 +155,4 @@ class Time
   end
 end
 
-HRS = Hrs
+Tt=TT
