@@ -11,7 +11,7 @@ DESCRIPTION
       hrs is a svelt time tracker for ruby
 
 PARAMETERS
-  --when=when, -w (0 ~> when=2012-01-27) 
+  --when=when, -w (0 ~> when=2012-01-31) 
       iso8601 date work was performed 
   --after=after, -a (0 ~> after=1969-12-31) 
       limit data shown to entries *after* this iso8601 date 
