@@ -31,6 +31,8 @@ Main {
 
     . hrs 4.2 project -- adding --dash feature to project 
 
+    . hrs status
+
   __
 
   option('when', 'w'){
@@ -60,7 +62,10 @@ Main {
   }
 
   def run
+    argv.map!{|arg| arg.strip}
+
     mode = argv.shift if argv.first and respond_to?(argv.first)
+
     if mode.nil?
       if argv.empty?
         mode = :list
@@ -68,10 +73,11 @@ Main {
         mode = :hours
       end
     end
+
     send(mode)
   end
 
-  def hours options = {}
+  def hours(options = {})
     hours = argv.shift or abort("no hours")
     project = argv.shift or abort("no project")
     message = argv.join(' ')
@@ -99,29 +105,7 @@ Main {
     result
   end
 
-  def log
-    params[:when].set(Date.today - 1) unless params[:when].given?
-    if argv.empty?
-      list
-    else
-      hours
-    end
-  end
-
-
-  def edit_message!
-    require 'tmpdir'
-    require 'fileutils'
-    tmp = File.join(Dir.tmpdir, "hrs-#{ Process.ppid }-#{ Process.pid }.#{ rand }.txt")
-    at_exit{ FileUtils.rm_f(tmp) }
-    editor = ENV['EDITOR'] || 'vim'
-    system("touch #{ tmp.inspect } && #{ editor.inspect } #{ tmp.inspect }")
-    msg = IO.read(tmp).strip
-    abort('no msg!') if msg.empty?
-    msg
-  end
-
-  def list options = {}
+  def list(options = {})
     project = argv.shift
     total = 0 if options['total'] || options[:total]
 
@@ -154,10 +138,6 @@ Main {
 
     y result unless options[:display]==false
     result
-  end
-
-  def total
-    list :total => true
   end
 
   def status
@@ -205,6 +185,34 @@ Main {
       end
     end
     puts "  @@total\n    #{ total }"
+  end
+
+  def total
+    list(:total => true)
+  end
+
+  def log
+    params[:when].set(Date.today - 1) unless params[:when].given?
+
+    if argv.empty?
+      list
+    else
+      hours
+    end
+  end
+
+
+
+  def edit_message!
+    require 'tmpdir'
+    require 'fileutils'
+    tmp = File.join(Dir.tmpdir, "hrs-#{ Process.ppid }-#{ Process.pid }.#{ rand }.txt")
+    at_exit{ FileUtils.rm_f(tmp) }
+    editor = ENV['EDITOR'] || 'vim'
+    system("touch #{ tmp.inspect } && #{ editor.inspect } #{ tmp.inspect }")
+    msg = IO.read(tmp).strip
+    abort('no msg!') if msg.empty?
+    msg
   end
 
   def db
