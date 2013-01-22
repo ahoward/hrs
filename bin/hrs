@@ -100,7 +100,7 @@ Main {
   end
 
   def log
-    params[:when].values.replace([Date.today - 1]) unless params[:when].given?
+    params[:when].set(Date.today - 1) unless params[:when].given?
     if argv.empty?
       list
     else
@@ -126,8 +126,8 @@ Main {
     total = 0 if options['total'] || options[:total]
 
     if params[:when].given? and !params[:after].given? and !params[:before].given?
-      params[:after].values.replace([params[:when].value])
-      params[:before].values.replace([params[:when].value + 1])
+      params[:after].set(params[:when].value)
+      params[:before].set(params[:when].value + 1)
     end
 
     after = param['after'].value
@@ -161,30 +161,50 @@ Main {
   end
 
   def status
+    unless params[:after].given?
+      today = Date.today
+      day = today.monday? ? (today - 2) : today
+      day -= 1 until day.sunday?
+
+      params[:after].set(day)
+    end
+
     result = list(:display => false)
 
     dates = Hash.new
+    sub_totals = Hash.new{|h,k| h[k] = 0}
 
     result.each do |project, entries|
       entries.each do |entry|
+        date = entry['when']
+        
         synopsis = <<-__
             @#{ project } #{ entry['time'] }
               #{ entry['what'] }
         __
         synopsis.gsub!(/^[\s]{10}/, '')
         synopsis.gsub!(/[\s]$/, '')
-        dates[entry['when']] ||= [] 
-        dates[entry['when']].push(synopsis)
+        dates[date] ||= [] 
+        dates[date].push(synopsis)
+
+        sub_totals[date] += entry['time']
       end
     end
 
-    dates.each do |date, list|
+    total = 0
+
+    sub_totals.each do |date, sub_total|
+      total += sub_total
+    end
+
+    dates.to_a.sort.reverse.each do |date, list|
       puts date
       list.each do |synopsis|
         puts(synopsis)
         puts
       end
     end
+    puts "  @@total\n    #{ total }"
   end
 
   def db
@@ -232,4 +252,10 @@ BEGIN {
   STDOUT.sync = true
   STDERR.sync = true
   STDIN.sync = true
+
+  unless defined?(y)
+    def y(object)
+      puts object.to_yaml
+    end
+  end
 }
